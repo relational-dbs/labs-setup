@@ -1,7 +1,7 @@
 # labs-setup
 
 PostgreSQL lab environment for the **Relational Databases** course — a Dockerized
-PostgreSQL 18 instance pre-loaded with six realistic datasets, paired with a
+PostgreSQL 18 instance pre-loaded with seven realistic datasets, paired with a
 Jupyter/Python toolchain for exploring and querying them.
 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.1-336791?logo=postgresql&logoColor=white)
@@ -17,7 +17,7 @@ Jupyter/Python toolchain for exploring and querying them.
 3. [Quickstart](#quickstart)
 4. [Repository structure](#repository-structure)
 5. [PostgreSQL infrastructure](#postgresql-infrastructure)
-6. [The six datasets](#the-six-datasets)
+6. [The seven datasets](#the-seven-datasets)
 7. [Connecting to the database](#connecting-to-the-database)
 8. [Python environment](#python-environment)
 9. [Available extensions](#available-extensions)
@@ -34,8 +34,9 @@ provides:
 
 - A **PostgreSQL 18** server running in Docker, with a curated set of extensions
   (PostGIS, pgvector, pg_cron, and more) pre-installed.
-- **Six domain-specific datasets** (airline, e-commerce, banking, library,
-  ride-sharing, video streaming), each shipped as a SQL dump plus an ER diagram.
+- **Seven domain-specific datasets** (airline, e-commerce, banking, library,
+  rail freight, ride-sharing, video streaming), each shipped as a SQL dump plus an
+  ER diagram.
 - **Two Jupyter notebooks** that automate the entire lifecycle: one that builds and
   starts the container, and one that loads the datasets.
 - A **Python environment** (managed with `uv`) with the drivers and libraries needed
@@ -59,7 +60,7 @@ flowchart LR
         JL["JupyterLab<br/><i>kernel: python3</i>"]:::host
         INF["postgresql_infra.ipynb<br/>build + start"]:::host
         DL["postgresql_dataload.ipynb<br/>create DBs + import"]:::host
-        SRC["schemas/<br/>6 datasets + ERDs"]:::host
+        SRC["schemas/<br/>7 datasets + ERDs"]:::host
         VOL["mount/postgres/<br/>data · schemas"]:::host
     end
 
@@ -77,6 +78,7 @@ flowchart LR
         B[(amazon)]:::db
         C[(banco)]:::db
         D[(biblioteca)]:::db
+        G[(ferrocarril)]:::db
         E[(uber)]:::db
         F[(youtube)]:::db
     end
@@ -89,7 +91,7 @@ flowchart LR
     VOL -.->|bind| V1
     VOL -.->|bind| V2
     PG --- EXT
-    PG --> A & B & C & D & E & F
+    PG --> A & B & C & D & G & E & F
     JL -.->|"localhost:5423"| PG
 ```
 
@@ -199,10 +201,10 @@ Then, inside JupyterLab, run the two notebooks **in order**:
 1. **`postgresql/postgresql_infra.ipynb`** — generates the Dockerfile and
    `docker-compose` file, builds the image, and starts the container.
 2. **`postgresql/postgresql_dataload.ipynb`** — copies the schemas into the
-   container mount, creates the six databases, and imports their data.
+   container mount, creates the seven databases, and imports their data.
 
 After the second notebook finishes, the server is listening on **port `5423`** and
-all six databases are ready to query (see
+all seven databases are ready to query (see
 [Connecting to the database](#connecting-to-the-database)).
 
 ---
@@ -215,13 +217,14 @@ labs-setup/
 ├── README.md
 └── postgresql/
     ├── postgresql_infra.ipynb     # Builds & starts the container (generates Docker files)
-    ├── postgresql_dataload.ipynb  # Creates the 6 DBs and imports the datasets
+    ├── postgresql_dataload.ipynb  # Creates the 7 DBs and imports the datasets
     ├── init-db.sh                 # Entrypoint: creates DBs listed in $DBS_LIST
     └── schemas/                   # Source datasets (committed)
         ├── aerolinea/             #   aerolinea_db.sql + ERD Aerolinea.pdf
         ├── amazon/                #   amazon_db.sql    + ERD Amazon.pdf
         ├── banco/                 #   banco_db.sql     + ERD Banco.pdf
         ├── biblioteca/            #   biblioteca_db.sql+ ERD Biblioteca.pdf
+        ├── ferrocarril/           #   ferrocarril_db.sql + ERD Ferrocarril.pdf
         ├── uber/                  #   uber_db.sql      + ERD Uber.pdf
         └── youtube/               #   youtube_db.sql   + ERD Youtube.pdf
 ```
@@ -261,7 +264,7 @@ inside the container can reach your host machine when needed.
 
 ---
 
-## The six datasets
+## The seven datasets
 
 Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 (`<name>_db.sql`) plus a PDF entity-relationship diagram (`ERD <Name>.pdf`).
@@ -272,11 +275,29 @@ Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 | `amazon` | E-commerce — products, orders, payments | `ERD Amazon.pdf` |
 | `banco` | Banking — customers, cards, transactions | `ERD Banco.pdf` |
 | `biblioteca` | Library — books, loans, inventory | `ERD Biblioteca.pdf` |
+| `ferrocarril` | Rail freight — real Mexican rail network, geofences, trains, shipments, simulated GPS telemetry | `ERD Ferrocarril.pdf` |
 | `uber` | Ride-sharing — users, drivers, trips | `ERD Uber.pdf` |
 | `youtube` | Video streaming — users, videos, comments | `ERD Youtube.pdf` |
 
 Each database is created with the same name as its dataset (e.g. the `aerolinea`
-schema is loaded into the `aerolinea` database).
+schema is loaded into the `aerolinea` database). `ferrocarril` needs the `postgis`
+extension, which the dump creates itself.
+
+### Data credits for `ferrocarril`
+
+- © OpenStreetMap contributors; data available under the Open Database License
+  (ODbL) 1.0, https://www.openstreetmap.org/copyright. `ferrocarril` is a derived
+  database.
+- Fuente: INEGI, Marco Geoestadístico, Encuesta Intercensal 2025 (corte noviembre
+  2025). The polygons were transformed (reprojection to EPSG:4326, simplification,
+  quantization); these transformations are not INEGI's.
+- Fuente: CONANP, Áreas Naturales Protegidas federales (version 2025-07-04), via
+  datos.gob.mx, CC BY 4.0. Polygons transformed by the same method.
+- Fuente: ATTRAPI, Registro de carga en el Sistema Ferroviario Mexicano
+  (datos.gob.mx), CC BY 4.0. Used only as statistical calibration.
+
+Trains, shipments, customers, rolling-stock assignments, and GPS readings are
+synthetic.
 
 ---
 
@@ -402,9 +423,9 @@ flowchart TB
     S5 --> S6["Container healthy"]:::done
     S6 --> S7["2 · Run postgresql_dataload.ipynb"]:::step
     S7 --> S8["Copy schemas/ → mount/"]:::step
-    S8 --> S9["DROP + CREATE 6 databases"]:::step
+    S8 --> S9["DROP + CREATE 7 databases"]:::step
     S9 --> S10["psql import *_db.sql"]:::step
-    S10 --> S11[("6 databases ready")]:::done
+    S10 --> S11[("7 databases ready")]:::done
 ```
 
 1. **`postgresql_infra.ipynb`**
@@ -416,7 +437,7 @@ flowchart TB
 
 2. **`postgresql_dataload.ipynb`**
    - Copies `postgresql/schemas/` into `mount/postgres/schemas/`.
-   - Drops and recreates the six databases.
+   - Drops and recreates the seven databases.
    - Imports each SQL dump into its database with `psql`.
 
 ### Rebuilding from scratch
