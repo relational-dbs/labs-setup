@@ -185615,3 +185615,13 @@ COPY public.telemetria (id, tren_id, registrado_en, posicion, velocidad_kmh, rum
 104740,596,2026-08-29 23:59:00+00:00,SRID=4326;POINT (-95.017854 17.42381),40.7,167.5,90.0
 104741,597,2026-08-29 23:59:00+00:00,SRID=4326;POINT (-99.175346 19.714665),30.0,357.7,90.0
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga)
+-- y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (ANALYZE);

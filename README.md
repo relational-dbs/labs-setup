@@ -283,6 +283,13 @@ Each database is created with the same name as its dataset (e.g. the `aerolinea`
 schema is loaded into the `aerolinea` database). `ferrocarril` needs the `postgis`
 extension, which the dump creates itself.
 
+The `ferrocarril` dump ends with a short maintenance block (`SET default_statistics_target = 1000;
+VACUUM FULL; VACUUM (ANALYZE);`) so that every load reaches the same physical state and the same
+planner statistics on any machine: each table occupies exactly the pages that hold rows, every page
+is marked all-visible, and the statistics are computed from the whole table instead of a random
+sample. The page and buffer counts used in the indexes lecture and Lab 11 assume this state; if you
+loaded `ferrocarril` before 2026-10-05, run `postgresql_dataload.ipynb` again.
+
 ### Data credits for `ferrocarril`
 
 - © OpenStreetMap contributors; data available under the Open Database License
