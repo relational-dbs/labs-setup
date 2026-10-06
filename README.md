@@ -207,6 +207,39 @@ After the second notebook finishes, the server is listening on **port `5423`** a
 all seven databases are ready to query (see
 [Connecting to the database](#connecting-to-the-database)).
 
+### Running the notebooks without JupyterLab (papermill)
+
+Each notebook has a `parameters` cell, so [papermill](https://papermill.readthedocs.io/)
+can run it from the terminal and override its settings with `-p`. Run from the
+`postgresql/` folder:
+
+```bash
+cd postgresql
+uv run papermill postgresql_infra.ipynb    infra.executed.ipynb    -k python3
+uv run papermill postgresql_dataload.ipynb dataload.executed.ipynb -k python3
+```
+
+Without `-p` the defaults are the same as in JupyterLab (container `postgres`, port
+`5423`, Compose project `postgres-compose`). To run a **second, independent** server
+next to an existing one, give it its own project, container and port, for example
+`-p POSTGRESQL_COMPOSE_PROJECT postgres-test -p POSTGRESQL_NAME postgres_test -p POSTGRESQL_PORT 5434`
+(pass the same `POSTGRESQL_NAME` to the dataload notebook). Every `docker compose`
+command acts only on `POSTGRESQL_COMPOSE_PROJECT`, so the other server is not touched.
+
+> Shell commands (`!docker …`) do not stop papermill when they fail. Read the
+> executed notebook, or check the databases afterwards, before trusting the run.
+
+### Editing the notebooks (jupytext)
+
+Each notebook is paired with a plain-text `.py` file (`py:percent` format, see
+`postgresql/jupytext.toml`). Both files hold the same cells. Edit either one, then
+synchronize the other:
+
+```bash
+cd postgresql
+uv run jupytext --sync postgresql_infra.py postgresql_dataload.py
+```
+
 ---
 
 ## Repository structure
@@ -214,10 +247,14 @@ all seven databases are ready to query (see
 ```
 labs-setup/
 ├── pyproject.toml                 # Python project + dependencies (uv-managed)
+├── .gitattributes                 # Keeps *.sh with LF line endings on every OS
 ├── README.md
 └── postgresql/
+    ├── jupytext.toml              # Pairs each notebook with its .py (py:percent)
     ├── postgresql_infra.ipynb     # Builds & starts the container (generates Docker files)
+    ├── postgresql_infra.py        #   same cells as plain text (jupytext pair)
     ├── postgresql_dataload.ipynb  # Creates the 7 DBs and imports the datasets
+    ├── postgresql_dataload.py     #   same cells as plain text (jupytext pair)
     ├── init-db.sh                 # Entrypoint: creates DBs listed in $DBS_LIST
     └── schemas/                   # Source datasets (committed)
         ├── aerolinea/             #   aerolinea_db.sql + ERD Aerolinea.pdf
@@ -381,6 +418,7 @@ Key dependencies:
 | Category | Packages |
 |---|---|
 | Jupyter | `jupyterlab`, `ipykernel`, `ipython-sql`, `ipywidgets`, `jupyter-tabnine` |
+| Notebook tooling | `jupytext` (pinned `1.19.6`), `papermill` (pinned `2.7.0`) |
 | PostgreSQL drivers | `psycopg2-binary`, `psycopg[binary]` |
 | ORM / data | `sqlalchemy`, `sqlmodel`, `pandas`, `pydantic` |
 | Data generation | `faker`, `faker-commerce`, `mimesis` |
@@ -443,14 +481,16 @@ flowchart TB
    - Runs `docker compose up -d --wait` to build and start the container.
 
 2. **`postgresql_dataload.ipynb`**
-   - Copies `postgresql/schemas/` into `mount/postgres/schemas/`.
+   - Copies `postgresql/schemas/` into `mount/<POSTGRESQL_NAME>/schemas/` (by default
+     `mount/postgres/schemas/`), the folder the infra notebook mounts at `/schemas`.
    - Drops and recreates the seven databases.
    - Imports each SQL dump into its database with `psql`.
 
 ### Rebuilding from scratch
 
-The `POSTGRESQL_START_FROM_SCRATCH` flag in each notebook controls whether the
-mount directory is wiped before (re)starting:
+The `POSTGRESQL_START_FROM_SCRATCH` flag of the infra notebook controls whether the
+mount directory is wiped before (re)starting (the dataload notebook defines the flag
+but does not use it):
 
 - Set to `True` to reset the environment completely (drops persisted data).
 - Set to `False` (default in the infra notebook) to keep existing volumes.
@@ -468,6 +508,7 @@ To force a clean rebuild of the image, uncomment the
 | `port 5423 already in use` | Another PostgreSQL (or the container) is bound to `5423`. Stop it or change `POSTGRESQL_PORT` in the notebooks. |
 | "Database does not exist" | The dataload notebook has not run yet, or it failed partway. Re-run it. |
 | Changes don't persist after restart | Data lives in `mount/postgres/data`; if it was deleted (or `POSTGRESQL_START_FROM_SCRATCH=True`), data is recreated only by re-running the dataload notebook. |
+| First start logs `init-db.sh: cannot execute: required file not found` and the container restarts | `init-db.sh` was checked out with Windows (CRLF) line endings. `.gitattributes` prevents this on new clones; in an older clone run `git rm --cached -r . && git reset --hard` (discards local edits), or re-clone, then start from scratch. |
 | Docker build fails on `pg_cron`/`pgvector` | The build compiles both from source; ensure a stable network connection and sufficient disk space. |
 
 ---

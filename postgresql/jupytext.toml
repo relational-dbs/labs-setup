@@ -1,0 +1,3 @@
+# Pair every notebook in this folder with a py:percent text representation.
+# Edit the .py, then run `uv run jupytext --sync <notebook>.py` to update the .ipynb.
+formats = "ipynb,py:percent"
