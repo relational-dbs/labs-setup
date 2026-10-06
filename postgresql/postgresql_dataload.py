@@ -63,13 +63,13 @@ shutil.copytree(
 # ### Create Databases
 
 # %%
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} aerolinea
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} amazon
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} banco
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} biblioteca
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} uber
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} youtube
-# !docker exec {POSTGRESQL_NAME} dropdb --username {POSTGRESQL_INIT_USER} ferrocarril
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} aerolinea
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} amazon
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} banco
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} biblioteca
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} uber
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} youtube
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} ferrocarril
 
 # %% [markdown]
 # ### Create the databases
