@@ -321,11 +321,12 @@ schema is loaded into the `aerolinea` database). `ferrocarril` needs the `postgi
 extension, which the dump creates itself.
 
 The `ferrocarril` dump ends with a short maintenance block (`SET default_statistics_target = 1000;
-VACUUM FULL; VACUUM (ANALYZE);`) so that every load reaches the same physical state and the same
-planner statistics on any machine: each table occupies exactly the pages that hold rows, every page
-is marked all-visible, and the statistics are computed from the whole table instead of a random
-sample. The page and buffer counts used in the indexes lecture and Lab 11 assume this state; if you
-loaded `ferrocarril` before 2026-10-05, run `postgresql_dataload.ipynb` again.
+VACUUM FULL; VACUUM (FREEZE, ANALYZE);`) so that every load reaches the same physical state and the
+same planner statistics on any machine: each table occupies exactly the pages that hold rows, every
+page is marked all-visible and all-frozen (`FREEZE` does this even if another transaction is open on
+the server, in any database), and the statistics are computed from the whole table instead of a
+random sample. The page and buffer counts used in the indexes lecture and Lab 11 assume this state;
+if you loaded `ferrocarril` before 2026-10-06, run `postgresql_dataload.ipynb` again.
 
 ### Data credits for `ferrocarril`
 

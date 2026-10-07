@@ -185620,8 +185620,8 @@ COPY public.telemetria (id, tren_id, registrado_en, posicion, velocidad_kmh, rum
 /*           MANTENIMIENTO FINAL            */
 /* **************************************** */
 
--- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga)
--- y calcula las estadisticas del planificador con la tabla completa como muestra.
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
 SET default_statistics_target = 1000;
 VACUUM FULL;
-VACUUM (ANALYZE);
+VACUUM (FREEZE, ANALYZE);
