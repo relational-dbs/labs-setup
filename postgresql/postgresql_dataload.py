@@ -60,7 +60,7 @@ shutil.copytree(
 )
 
 # %% [markdown]
-# ### Create Databases
+# ### Delete old Databases
 
 # %%
 # !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} aerolinea
@@ -72,7 +72,7 @@ shutil.copytree(
 # !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} ferrocarril
 
 # %% [markdown]
-# ### Create the databases
+# ### Create databases
 #
 # Recreates the seven course databases (aerolinea, amazon, banco, biblioteca, ferrocarril, uber, youtube) after dropping any previous copies.
 #
