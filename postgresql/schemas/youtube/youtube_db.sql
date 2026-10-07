@@ -175305,3 +175305,13 @@ Another any interest me wear. Would face cover within require yet hand price. Di
 No through blood summer. Country our both investment though trouble.
 Result truth appear. Teach part specific budget whether language model. Lay they money city might result population.",2024-07-06 18:54:46.009260 +00:00,2000,2610
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (FREEZE, ANALYZE);

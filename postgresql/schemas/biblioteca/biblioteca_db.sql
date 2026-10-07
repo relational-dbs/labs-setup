@@ -156483,3 +156483,13 @@ COPY public.rainbow (id, contrasena, hash) FROM stdin WITH (FORMAT CSV, DELIMITE
 17596,zzy,52fe5c6b582da2db1402d3677a88b7ef49005deb44c8531593defe936b53765e
 17597,zzz,17f165d5a5ba695f27c023a83aa2b3463e23810e360b7517127e90161eebabda
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (FREEZE, ANALYZE);

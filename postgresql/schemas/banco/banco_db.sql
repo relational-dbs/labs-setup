@@ -29982,3 +29982,13 @@ COPY public.transaccion (id, fecha, monto, es_fraude, cliente_id, establecimient
 19999,2016-04-29 15:25:21.385985 +00:00,80013.00,false,2656,755,5314
 20000,2023-07-07 06:20:11.385985 +00:00,37209.00,false,1051,39,2084
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (FREEZE, ANALYZE);

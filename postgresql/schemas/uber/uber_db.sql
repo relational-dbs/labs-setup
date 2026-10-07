@@ -110291,3 +110291,13 @@ She degree force teach network way challenge. Space bill half sometimes draw rac
 Special yet after close activity. Rule involve pick also federal energy various bar.
 Tend nearly skill as student born event prevent. According someone capital land authority.",37421
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (FREEZE, ANALYZE);

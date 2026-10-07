@@ -320,13 +320,16 @@ Each database is created with the same name as its dataset (e.g. the `aerolinea`
 schema is loaded into the `aerolinea` database). `ferrocarril` needs the `postgis`
 extension, which the dump creates itself.
 
-The `ferrocarril` dump ends with a short maintenance block (`SET default_statistics_target = 1000;
+Every dump ends with a short maintenance block (`SET default_statistics_target = 1000;
 VACUUM FULL; VACUUM (FREEZE, ANALYZE);`) so that every load reaches the same physical state and the
 same planner statistics on any machine: each table occupies exactly the pages that hold rows, every
 page is marked all-visible and all-frozen (`FREEZE` does this even if another transaction is open on
 the server, in any database), and the statistics are computed from the whole table instead of a
-random sample. The page and buffer counts used in the indexes lecture and Lab 11 assume this state;
-if you loaded `ferrocarril` before 2026-10-06, run `postgresql_dataload.ipynb` again.
+random sample (`ANALYZE VERBOSE` on `biblioteca.prestamo` reports 100 019 of 100 019 rows in the
+sample with this setting, against 30 000 with the default). Without it,
+the same query can get a different plan on two loads of the same dump. The plans, page and buffer
+counts used in the lectures and labs assume this state; if you loaded `ferrocarril` before
+2026-10-06, or any other database before 2026-10-07, run `postgresql_dataload.ipynb` again.
 
 ### Data credits for `ferrocarril`
 

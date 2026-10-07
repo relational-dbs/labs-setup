@@ -17065,3 +17065,13 @@ COPY public.pago (id, fecha_pago, fecha_validacion, monto, validado, orden_id) F
 4934,2024-01-02 19:37:09.538574 +00:00,2024-01-10 14:38:28.538574 +00:00,1831.00,true,1416
 4935,2025-05-18 04:06:38.806371 +00:00,2025-05-24 04:58:43.806371 +00:00,3786.00,true,1416
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (FREEZE, ANALYZE);

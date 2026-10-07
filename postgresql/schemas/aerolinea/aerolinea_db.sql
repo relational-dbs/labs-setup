@@ -2196,3 +2196,13 @@ COPY public.pasajero_vuelo (id, no_maletas, asiento, pasajero_id, vuelo_id) FROM
 1068,0,43B,40,18
 1069,0,48C,196,114
 \.
+
+/* **************************************** */
+/*           MANTENIMIENTO FINAL            */
+/* **************************************** */
+
+-- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
+-- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+SET default_statistics_target = 1000;
+VACUUM FULL;
+VACUUM (FREEZE, ANALYZE);
