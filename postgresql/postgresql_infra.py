@@ -233,7 +233,7 @@ display(Markdown(f"```yaml\n{postgresql_compose_yaml_contents}\n```"))
 #
 # ------------------------------------------
 #
-# -- Python scripts
+# -- Python scripts \
 # CREATE EXTENSION IF NOT EXISTS plpython3u;
 #
 # -- AI and Semantic Search \
@@ -262,7 +262,7 @@ display(Markdown(f"```yaml\n{postgresql_compose_yaml_contents}\n```"))
 #
 # ------------------------------------------
 #
-# -- Python scripts
+# -- Python scripts \
 # DROP EXTENSION IF EXISTS plpython3u;
 #
 # -- AI and Semantic Search \
