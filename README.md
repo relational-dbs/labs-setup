@@ -329,9 +329,12 @@ page is marked all-visible and all-frozen (`FREEZE` does this even if another tr
 the server, in any database), and the statistics are computed from the whole table instead of a
 random sample (`ANALYZE VERBOSE` on `biblioteca.prestamo` reports 100 019 of 100 019 rows in the
 sample with this setting, against 30 000 with the default). Without it,
-the same query can get a different plan on two loads of the same dump. The plans, page and buffer
-counts used in the lectures and labs assume this state; if you loaded `ferrocarril` before
-2026-10-06, or any other database before 2026-10-07, run `postgresql_dataload.ipynb` again.
+the same query can get a different plan on two loads of the same dump. Every dump except `ferrocarril`
+also calls `pg_stat_force_next_flush()` just before the block: a session publishes its activity counts at
+most once per second, and counts published after the `ANALYZE` made autovacuum analyze the table again
+with a random sample a minute later. The plans, page and buffer counts used in the lectures and labs
+assume this state; if you loaded `ferrocarril` before 2026-10-06, or any other database before
+2026-10-11, run `postgresql_dataload.ipynb` again.
 
 ### Data credits for `ferrocarril`
 

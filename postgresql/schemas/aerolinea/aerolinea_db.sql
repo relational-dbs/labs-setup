@@ -2203,6 +2203,9 @@ COPY public.pasajero_vuelo (id, no_maletas, asiento, pasajero_id, vuelo_id) FROM
 
 -- Estado final determinista: compacta cada tabla (VACUUM FULL elimina las paginas vacias que deja la carga),
 -- congela todas las filas y calcula las estadisticas del planificador con la tabla completa como muestra.
+-- Antes, publica los contadores de actividad pendientes de esta sesion (se publican a lo mas una vez por
+-- segundo): si se publicaran despues del ANALYZE, autovacuum volveria a analizar con una muestra aleatoria.
+DO $$ BEGIN PERFORM pg_stat_force_next_flush(); END $$;
 SET default_statistics_target = 1000;
 VACUUM FULL;
 VACUUM (FREEZE, ANALYZE);
