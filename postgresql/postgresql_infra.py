@@ -30,6 +30,16 @@ POSTGRESQL_DATADIR = "/var/lib/postgresql"
 POSTGRESQL_INIT_USER = "postgres"
 POSTGRESQL_INIT_PASSWORD = "password"
 
+# Pinned versions (latest available on 2026-10-10). The image is pinned by digest, and every package by its exact
+# Debian version, installed from apt-archive.postgresql.org, which keeps all released versions (apt.postgresql.org
+# keeps only the newest one). Everyone who builds gets the same server.
+POSTGRESQL_IMAGE = "postgres:18.6-trixie@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336"
+POSTGRESQL_PACKAGE_VERSION = "18.6-1.pgdg13+2"
+POSTGIS_PACKAGE_VERSION = "3.6.4+dfsg-2.pgdg13+1"
+PG_CRON_PACKAGE_VERSION = "1.6.8-1.pgdg13+2"
+PGVECTOR_PACKAGE_VERSION = "0.8.7-1.pgdg13+1"
+POSTGRESQL_IMAGE_TAG = "labs-postgres:18.6-postgis3.6.4-pgcron1.6.8-pgvector0.8.7"
+
 # %% [markdown]
 # ### Local work directories
 #
@@ -55,20 +65,40 @@ mount_path.mkdir(parents=True, exist_ok=True)
 # %% [markdown]
 # ### Reset local data (only when starting from scratch)
 #
-# Removes the local `mount/` data when `POSTGRESQL_START_FROM_SCRATCH` is enabled, so the container is recreated with a clean volume.
+# Removes this server's data (`mount/<POSTGRESQL_NAME>/`) when `POSTGRESQL_START_FROM_SCRATCH` is enabled, so the
+# container is recreated with a clean volume. Other servers under `mount/` are not touched. On Linux the data files
+# belong to the container's `postgres` user, so a container removes them when Python is not allowed to.
+#
+# Then creates `mount/<POSTGRESQL_NAME>/data` and `mount/<POSTGRESQL_NAME>/schemas` as the current user: if Docker
+# created them at start-up they would belong to `root` on Linux, and the dataload notebook could not copy the dumps.
 #
 
 # %%
 import shutil
+import subprocess
 
-if POSTGRESQL_START_FROM_SCRATCH:
-    shutil.rmtree(LOCALHOST_DOCKER_MOUNTDIR, ignore_errors=True)
-    Path(LOCALHOST_DOCKER_MOUNTDIR).mkdir(parents=True, exist_ok=True)
+server_mount_path = (mount_path / POSTGRESQL_NAME).resolve()
+if POSTGRESQL_START_FROM_SCRATCH and server_mount_path.exists():
+    try:
+        shutil.rmtree(server_mount_path)
+    except PermissionError:
+        subprocess.run(
+            ["docker", "run", "--rm", "-v", f"{server_mount_path}:/to-delete", "--entrypoint", "sh",
+             POSTGRESQL_IMAGE, "-c", "rm -rf /to-delete/* /to-delete/.[!.]*"],
+            check=True,
+        )
+        shutil.rmtree(server_mount_path)
+    print(f"Removed: '{server_mount_path}'")
+
+for subdir in ("data", "schemas"):
+    (server_mount_path / subdir).mkdir(parents=True, exist_ok=True)
 
 # %% [markdown]
 # ### Write the PostgreSQL Dockerfile
 #
-# Generates `postgresql.dockerfile`, which layers PostGIS, `pg_cron`, and `pgvector v0.8.2` on top of the official `postgres:18.1-trixie` image.
+# Generates `postgresql.dockerfile`: the official PostgreSQL image pinned by digest, plus PostGIS, PL/Python,
+# `pg_cron` and `pgvector` at the exact versions of the parameters cell. The build fails if any installed version
+# differs from its pin.
 #
 
 # %%
@@ -77,41 +107,36 @@ from IPython.display import Markdown, display
 
 dockerfile_postgresql_name = "postgresql.dockerfile"
 
+pinned_packages = {
+    "postgresql-18": POSTGRESQL_PACKAGE_VERSION,
+    "postgresql-client-18": POSTGRESQL_PACKAGE_VERSION,
+    "postgresql-plpython3-18": POSTGRESQL_PACKAGE_VERSION,
+    "postgresql-18-postgis-3": POSTGIS_PACKAGE_VERSION,
+    "postgresql-18-postgis-3-scripts": POSTGIS_PACKAGE_VERSION,
+    "postgresql-18-cron": PG_CRON_PACKAGE_VERSION,
+    "postgresql-18-pgvector": PGVECTOR_PACKAGE_VERSION,
+}
+install_list = " \\\n    ".join(f"{name}={version}" for name, version in pinned_packages.items())
+version_checks = " && \\\n    ".join(
+    f'test "$(dpkg-query -W -f=\'${{Version}}\' {name})" = "{version}"'
+    for name, version in pinned_packages.items()
+)
+
 # language=dockerfile
-dockerfile_postgresql_contents = f""" 
+dockerfile_postgresql_contents = f"""
+# Official PostgreSQL image, pinned by digest
+FROM {POSTGRESQL_IMAGE}
 
-# Use the official Spark image as the base
-FROM postgres:18.1-trixie
-
-# 1. Instalar dependencias para PostGIS y herramientas de compilación
-RUN apt-get update && apt-get install -y \\
-    postgresql-server-dev-18 \\
-    postgresql-18-postgis-3 \\
-    postgresql-18-postgis-3-scripts \\
-    postgresql-plpython3-18 \\
-    build-essential \\
-    git \\
+# Every released PGDG package version stays available in apt-archive.postgresql.org (same signing key as the
+# image's own PGDG source), so exact versions can always be installed.
+RUN echo "deb [ signed-by=/usr/local/share/keyrings/postgres.gpg.asc ] https://apt-archive.postgresql.org/pub/repos/apt trixie-pgdg-archive main" \\
+    > /etc/apt/sources.list.d/pgdg-archive.list && \\
+    apt-get update && apt-get install -y \\
+    {install_list} \\
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Compilar e instalar pg_cron (Versión compatible con Postgres 18)
-RUN cd /tmp && \\
-    git clone https://github.com/citusdata/pg_cron.git && \\
-    cd pg_cron && \\
-    make && \\
-    make install && \\
-    rm -rf /tmp/pg_cron
-
-# 3. Compilar e instalar pgvector v0.8.2
-# Se recomienda usar la versión v0.8.2 ya que es el último tag estable oficial en GitHub
-RUN cd /tmp && \\
-    git clone --branch v0.8.2 https://github.com/pgvector/pgvector.git && \\
-    cd pgvector && \\
-    make && \\
-    make install && \\
-    rm -rf /tmp/pgvector
-
-# 4. Limpieza de paquetes de compilación
-RUN apt-get purge -y --auto-remove build-essential git postgresql-server-dev-18
+# Fail the build if any installed version differs from its pin
+RUN {version_checks}
 """
 
 with open(
@@ -144,7 +169,8 @@ postgresql_compose_dict = {
 }
 
 postgresql_compose_dict["services"][POSTGRESQL_NAME] = {
-    # "image": "postgres:18.1-trixie",
+    # The tag names the pinned versions: changing a pin changes the tag, so `up` builds the new image.
+    "image": POSTGRESQL_IMAGE_TAG,
     "build": {"context": ".", "dockerfile": dockerfile_postgresql_name},
     "container_name": POSTGRESQL_NAME,
     "environment": {

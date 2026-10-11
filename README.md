@@ -4,7 +4,7 @@ PostgreSQL lab environment for the **Relational Databases** course — a Dockeri
 PostgreSQL 18 instance pre-loaded with seven realistic datasets, paired with a
 Jupyter/Python toolchain for exploring and querying them.
 
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.1-336791?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
 
@@ -64,10 +64,10 @@ flowchart LR
         VOL["mount/postgres/<br/>data · schemas"]:::host
     end
 
-    subgraph CT["DOCKER CONTAINER · postgres:18.1-trixie"]
+    subgraph CT["DOCKER CONTAINER · postgres:18.6-trixie"]
         direction TB
         PG[("PostgreSQL 18")]:::ctr
-        EXT["PostGIS 3 · pgvector 0.8.2 · pg_cron<br/>plpython3u · pg_trgm · unaccent<br/>pg_stat_statements · ltree · hstore"]:::aux
+        EXT["PostGIS 3.6.4 · pgvector 0.8.7 · pg_cron 1.6.8<br/>plpython3u · pg_trgm · unaccent<br/>pg_stat_statements · ltree · hstore"]:::aux
         V1["/var/lib/postgresql"]:::aux
         V2["/schemas"]:::aux
     end
@@ -277,9 +277,11 @@ labs-setup/
 
 | Aspect | Value |
 |---|---|
-| Base image | `postgres:18.1-trixie` |
-| Compiled extensions | `pg_cron` (from source), `pgvector` v0.8.2 (from source) |
-| Apt-installed | PostGIS 3, `plpython3u` |
+| Base image | `postgres:18.6-trixie`, pinned by digest (`sha256:74935e72…`) |
+| PostgreSQL | 18.6 (`18.6-1.pgdg13+2`) |
+| Extensions (exact Debian versions) | PostGIS 3.6.4 (`3.6.4+dfsg-2.pgdg13+1`), `pg_cron` 1.6.8 (`1.6.8-1.pgdg13+2`), `pgvector` 0.8.7 (`0.8.7-1.pgdg13+1`), `plpython3u` (`18.6-1.pgdg13+2`) |
+| Package source | `apt-archive.postgresql.org` (`trixie-pgdg-archive`), which keeps every released version |
+| Image tag | `labs-postgres:18.6-postgis3.6.4-pgcron1.6.8-pgvector0.8.7` |
 | Preloaded libraries | `pg_stat_statements`, `pg_cron` |
 | Port mapping | `5423` (host) → `5432` (container) |
 | Default database | `postgres` |
@@ -478,8 +480,10 @@ flowchart TB
 ```
 
 1. **`postgresql_infra.ipynb`**
-   - Writes `postgresql.dockerfile` (PostgreSQL 18 + PostGIS + `plpython3u` +
-     compiled `pg_cron` and `pgvector`).
+   - Writes `postgresql.dockerfile`: the PostgreSQL 18.6 image pinned by digest, plus
+     PostGIS, `plpython3u`, `pg_cron` and `pgvector` at exact package versions (the
+     build fails if any installed version differs from its pin). All versions are in
+     the notebook's `parameters` cell.
    - Writes `postgresql.docker-compose.yml` (build context, volumes, ports, resource
      limits, healthcheck).
    - Runs `docker compose up -d --wait` to build and start the container.
@@ -496,7 +500,9 @@ The `POSTGRESQL_START_FROM_SCRATCH` flag of the infra notebook controls whether 
 mount directory is wiped before (re)starting (the dataload notebook defines the flag
 but does not use it):
 
-- Set to `True` to reset the environment completely (drops persisted data).
+- Set to `True` to reset this server completely: removes `mount/<POSTGRESQL_NAME>/`
+  (other servers under `mount/` are kept). On Linux the data files belong to the
+  container's user, so the notebook removes them with a short-lived container.
 - Set to `False` (default in the infra notebook) to keep existing volumes.
 
 To force a clean rebuild of the image, uncomment the
@@ -513,7 +519,8 @@ To force a clean rebuild of the image, uncomment the
 | "Database does not exist" | The dataload notebook has not run yet, or it failed partway. Re-run it. |
 | Changes don't persist after restart | Data lives in `mount/postgres/data`; if it was deleted (or `POSTGRESQL_START_FROM_SCRATCH=True`), data is recreated only by re-running the dataload notebook. |
 | First start logs `init-db.sh: cannot execute: required file not found` and the container restarts | `init-db.sh` was checked out with Windows (CRLF) line endings. `.gitattributes` prevents this on new clones; in an older clone run `git rm --cached -r . && git reset --hard` (discards local edits), or re-clone, then start from scratch. |
-| Docker build fails on `pg_cron`/`pgvector` | The build compiles both from source; ensure a stable network connection and sufficient disk space. |
+| Docker build fails at `apt-get install` or at the version check | The pinned versions are downloaded from `apt-archive.postgresql.org`; check the network connection. A failed version check means an installed package does not match its pin in the infra notebook's `parameters` cell. |
+| `PermissionError` copying the schemas (Linux) | `mount/<POSTGRESQL_NAME>/schemas` was created by Docker as `root` by an older version of the infra notebook. Re-run `postgresql_infra.ipynb` with `POSTGRESQL_START_FROM_SCRATCH=True` (it recreates both folders as your user), then the dataload notebook. |
 
 ---
 
