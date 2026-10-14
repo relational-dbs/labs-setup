@@ -1,10 +1,10 @@
 # labs-setup
 
 PostgreSQL lab environment for the **Relational Databases** course — a Dockerized
-PostgreSQL 18 instance pre-loaded with seven realistic datasets, paired with a
+PostgreSQL 18 instance pre-loaded with eight realistic datasets, paired with a
 Jupyter/Python toolchain for exploring and querying them.
 
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.1-336791?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
 
@@ -17,7 +17,7 @@ Jupyter/Python toolchain for exploring and querying them.
 3. [Quickstart](#quickstart)
 4. [Repository structure](#repository-structure)
 5. [PostgreSQL infrastructure](#postgresql-infrastructure)
-6. [The seven datasets](#the-seven-datasets)
+6. [The eight datasets](#the-eight-datasets)
 7. [Connecting to the database](#connecting-to-the-database)
 8. [Python environment](#python-environment)
 9. [Available extensions](#available-extensions)
@@ -34,7 +34,7 @@ provides:
 
 - A **PostgreSQL 18** server running in Docker, with a curated set of extensions
   (PostGIS, pgvector, pg_cron, and more) pre-installed.
-- **Seven domain-specific datasets** (airline, e-commerce, banking, library,
+- **Eight domain-specific datasets** (airline, e-commerce, banking, library,
   rail freight, ride-sharing, video streaming), each shipped as a SQL dump plus an
   ER diagram.
 - **Two Jupyter notebooks** that automate the entire lifecycle: one that builds and
@@ -60,14 +60,14 @@ flowchart LR
         JL["JupyterLab<br/><i>kernel: python3</i>"]:::host
         INF["postgresql_infra.ipynb<br/>build + start"]:::host
         DL["postgresql_dataload.ipynb<br/>create DBs + import"]:::host
-        SRC["schemas/<br/>7 datasets + ERDs"]:::host
+        SRC["schemas/<br/>8 datasets + ERDs"]:::host
         VOL["mount/postgres/<br/>data · schemas"]:::host
     end
 
-    subgraph CT["DOCKER CONTAINER · postgres:18.1-trixie"]
+    subgraph CT["DOCKER CONTAINER · postgres:18.6-trixie"]
         direction TB
         PG[("PostgreSQL 18")]:::ctr
-        EXT["PostGIS 3 · pgvector 0.8.2 · pg_cron<br/>plpython3u · pg_trgm · unaccent<br/>pg_stat_statements · ltree · hstore"]:::aux
+        EXT["PostGIS 3.6.4 · pgvector 0.8.7 · pg_cron 1.6.8<br/>plpython3u · pg_trgm · unaccent<br/>pg_stat_statements · ltree · hstore"]:::aux
         V1["/var/lib/postgresql"]:::aux
         V2["/schemas"]:::aux
     end
@@ -79,6 +79,7 @@ flowchart LR
         C[(banco)]:::db
         D[(biblioteca)]:::db
         G[(ferrocarril)]:::db
+        H[(semantica)]:::db
         E[(uber)]:::db
         F[(youtube)]:::db
     end
@@ -91,7 +92,7 @@ flowchart LR
     VOL -.->|bind| V1
     VOL -.->|bind| V2
     PG --- EXT
-    PG --> A & B & C & D & G & E & F
+    PG --> A & B & C & D & G & H & E & F
     JL -.->|"localhost:5423"| PG
 ```
 
@@ -201,10 +202,10 @@ Then, inside JupyterLab, run the two notebooks **in order**:
 1. **`postgresql/postgresql_infra.ipynb`** — generates the Dockerfile and
    `docker-compose` file, builds the image, and starts the container.
 2. **`postgresql/postgresql_dataload.ipynb`** — copies the schemas into the
-   container mount, creates the seven databases, and imports their data.
+   container mount, creates the eight databases, and imports their data.
 
 After the second notebook finishes, the server is listening on **port `5423`** and
-all seven databases are ready to query (see
+all eight databases are ready to query (see
 [Connecting to the database](#connecting-to-the-database)).
 
 ### Running the notebooks without JupyterLab (papermill)
@@ -253,7 +254,7 @@ labs-setup/
     ├── jupytext.toml              # Pairs each notebook with its .py (py:percent)
     ├── postgresql_infra.ipynb     # Builds & starts the container (generates Docker files)
     ├── postgresql_infra.py        #   same cells as plain text (jupytext pair)
-    ├── postgresql_dataload.ipynb  # Creates the 7 DBs and imports the datasets
+    ├── postgresql_dataload.ipynb  # Creates the 8 DBs and imports the datasets
     ├── postgresql_dataload.py     #   same cells as plain text (jupytext pair)
     ├── init-db.sh                 # Entrypoint: creates DBs listed in $DBS_LIST
     └── schemas/                   # Source datasets (committed)
@@ -261,7 +262,8 @@ labs-setup/
         ├── amazon/                #   amazon_db.sql    + ERD Amazon.pdf
         ├── banco/                 #   banco_db.sql     + ERD Banco.pdf
         ├── biblioteca/            #   biblioteca_db.sql+ ERD Biblioteca.pdf
-        ├── ferrocarril/           #   ferrocarril_db.sql + ERD Ferrocarril.pdf
+        ├── ferrocarril/           #   ferrocarril_db.sql + ERD Ferrocarril.pdf + .drawio
+        ├── semantica/             #   semantica_db.sql + ERD Semantica.pdf + .drawio
         ├── uber/                  #   uber_db.sql      + ERD Uber.pdf
         └── youtube/               #   youtube_db.sql   + ERD Youtube.pdf
 ```
@@ -277,9 +279,11 @@ labs-setup/
 
 | Aspect | Value |
 |---|---|
-| Base image | `postgres:18.1-trixie` |
-| Compiled extensions | `pg_cron` (from source), `pgvector` v0.8.2 (from source) |
-| Apt-installed | PostGIS 3, `plpython3u` |
+| Base image | `postgres:18.6-trixie`, pinned by digest (`sha256:74935e72…`) |
+| PostgreSQL | 18.6 (`18.6-1.pgdg13+2`) |
+| Extensions (exact Debian versions) | PostGIS 3.6.4 (`3.6.4+dfsg-2.pgdg13+1`), `pg_cron` 1.6.8 (`1.6.8-1.pgdg13+2`), `pgvector` 0.8.7 (`0.8.7-1.pgdg13+1`), `plpython3u` (`18.6-1.pgdg13+2`) |
+| Package source | `apt-archive.postgresql.org` (`trixie-pgdg-archive`), which keeps every released version |
+| Image tag | `labs-postgres:18.6-postgis3.6.4-pgcron1.6.8-pgvector0.8.7` |
 | Preloaded libraries | `pg_stat_statements`, `pg_cron` |
 | Port mapping | `5423` (host) → `5432` (container) |
 | Default database | `postgres` |
@@ -301,10 +305,15 @@ inside the container can reach your host machine when needed.
 
 ---
 
-## The seven datasets
+## The eight datasets
 
 Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 (`<name>_db.sql`) plus a PDF entity-relationship diagram (`ERD <Name>.pdf`).
+The `ferrocarril` and `semantica` diagrams also come as editable draw.io files
+(`ERD <Name>.drawio`). Both are drawn from the catalog of the published dump
+(tables, columns, types, `PK`/`FK`/`UQ`/`CHK` marks and every foreign key), in
+crow's-foot notation: each line leaves the row of its foreign key and reaches
+the table it references, without crossing another line or passing over a table.
 
 | Dataset | Domain | ER diagram |
 |---|---|---|
@@ -313,12 +322,13 @@ Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 | `banco` | Banking — customers, cards, transactions | `ERD Banco.pdf` |
 | `biblioteca` | Library — books, loans, inventory | `ERD Biblioteca.pdf` |
 | `ferrocarril` | Rail freight — real Mexican rail network, geofences, trains, shipments, simulated GPS telemetry | `ERD Ferrocarril.pdf` |
+| `semantica` | Semantle-style word game — 8 000 Spanish words with fastText vectors, daily games with a secret word, players, plays and guesses with their similarity and rank | `ERD Semantica.pdf` |
 | `uber` | Ride-sharing — users, drivers, trips | `ERD Uber.pdf` |
 | `youtube` | Video streaming — users, videos, comments | `ERD Youtube.pdf` |
 
 Each database is created with the same name as its dataset (e.g. the `aerolinea`
 schema is loaded into the `aerolinea` database). `ferrocarril` needs the `postgis`
-extension, which the dump creates itself.
+extension and `semantica` the `vector` extension (pgvector); each dump creates its own.
 
 Every dump ends with a short maintenance block (`SET default_statistics_target = 1000;
 VACUUM FULL; VACUUM (FREEZE, ANALYZE);`) so that every load reaches the same physical state and the
@@ -327,9 +337,22 @@ page is marked all-visible and all-frozen (`FREEZE` does this even if another tr
 the server, in any database), and the statistics are computed from the whole table instead of a
 random sample (`ANALYZE VERBOSE` on `biblioteca.prestamo` reports 100 019 of 100 019 rows in the
 sample with this setting, against 30 000 with the default). Without it,
-the same query can get a different plan on two loads of the same dump. The plans, page and buffer
-counts used in the lectures and labs assume this state; if you loaded `ferrocarril` before
-2026-10-06, or any other database before 2026-10-07, run `postgresql_dataload.ipynb` again.
+the same query can get a different plan on two loads of the same dump. Every dump except `ferrocarril`
+also calls `pg_stat_force_next_flush()` just before the block: a session publishes its activity counts at
+most once per second, and counts published after the `ANALYZE` made autovacuum analyze the table again
+with a random sample a minute later. The plans, page and buffer counts used in the lectures and labs
+assume this state; if you loaded `ferrocarril` before 2026-10-06, or any other database before
+2026-10-11, run `postgresql_dataload.ipynb` again.
+
+### Data credits for `semantica`
+
+- Word vectors: fastText `cc.es.300` — E. Grave, P. Bojanowski, P. Gupta, A. Joulin, T. Mikolov,
+  *Learning Word Vectors for 157 Languages*, LREC 2018,
+  https://fasttext.cc/docs/en/crawl-vectors.html. «The word vectors are distributed under the Creative
+  Commons Attribution-Share-Alike License 3.0.» `semantica` is a derived database (each vector quantized to
+  integers in [-127, 127]) and is distributed under the same licence (CC BY-SA 3.0).
+- Players, games, plays and guesses are simulated (seed 20261010); every guess's similarity and rank can be
+  recomputed from the vectors with pgvector's `<=>`.
 
 ### Data credits for `ferrocarril`
 
@@ -472,14 +495,16 @@ flowchart TB
     S5 --> S6["Container healthy"]:::done
     S6 --> S7["2 · Run postgresql_dataload.ipynb"]:::step
     S7 --> S8["Copy schemas/ → mount/"]:::step
-    S8 --> S9["DROP + CREATE 7 databases"]:::step
+    S8 --> S9["DROP + CREATE 8 databases"]:::step
     S9 --> S10["psql import *_db.sql"]:::step
-    S10 --> S11[("7 databases ready")]:::done
+    S10 --> S11[("8 databases ready")]:::done
 ```
 
 1. **`postgresql_infra.ipynb`**
-   - Writes `postgresql.dockerfile` (PostgreSQL 18 + PostGIS + `plpython3u` +
-     compiled `pg_cron` and `pgvector`).
+   - Writes `postgresql.dockerfile`: the PostgreSQL 18.6 image pinned by digest, plus
+     PostGIS, `plpython3u`, `pg_cron` and `pgvector` at exact package versions (the
+     build fails if any installed version differs from its pin). All versions are in
+     the notebook's `parameters` cell.
    - Writes `postgresql.docker-compose.yml` (build context, volumes, ports, resource
      limits, healthcheck).
    - Runs `docker compose up -d --wait` to build and start the container.
@@ -487,7 +512,7 @@ flowchart TB
 2. **`postgresql_dataload.ipynb`**
    - Copies `postgresql/schemas/` into `mount/<POSTGRESQL_NAME>/schemas/` (by default
      `mount/postgres/schemas/`), the folder the infra notebook mounts at `/schemas`.
-   - Drops and recreates the seven databases.
+   - Drops and recreates the eight databases.
    - Imports each SQL dump into its database with `psql`.
 
 ### Rebuilding from scratch
@@ -496,7 +521,9 @@ The `POSTGRESQL_START_FROM_SCRATCH` flag of the infra notebook controls whether 
 mount directory is wiped before (re)starting (the dataload notebook defines the flag
 but does not use it):
 
-- Set to `True` to reset the environment completely (drops persisted data).
+- Set to `True` to reset this server completely: removes `mount/<POSTGRESQL_NAME>/`
+  (other servers under `mount/` are kept). On Linux the data files belong to the
+  container's user, so the notebook removes them with a short-lived container.
 - Set to `False` (default in the infra notebook) to keep existing volumes.
 
 To force a clean rebuild of the image, uncomment the
@@ -513,7 +540,8 @@ To force a clean rebuild of the image, uncomment the
 | "Database does not exist" | The dataload notebook has not run yet, or it failed partway. Re-run it. |
 | Changes don't persist after restart | Data lives in `mount/postgres/data`; if it was deleted (or `POSTGRESQL_START_FROM_SCRATCH=True`), data is recreated only by re-running the dataload notebook. |
 | First start logs `init-db.sh: cannot execute: required file not found` and the container restarts | `init-db.sh` was checked out with Windows (CRLF) line endings. `.gitattributes` prevents this on new clones; in an older clone run `git rm --cached -r . && git reset --hard` (discards local edits), or re-clone, then start from scratch. |
-| Docker build fails on `pg_cron`/`pgvector` | The build compiles both from source; ensure a stable network connection and sufficient disk space. |
+| Docker build fails at `apt-get install` or at the version check | The pinned versions are downloaded from `apt-archive.postgresql.org`; check the network connection. A failed version check means an installed package does not match its pin in the infra notebook's `parameters` cell. |
+| `PermissionError` copying the schemas (Linux) | `mount/<POSTGRESQL_NAME>/schemas` was created by Docker as `root` by an older version of the infra notebook. Re-run `postgresql_infra.ipynb` with `POSTGRESQL_START_FROM_SCRATCH=True` (it recreates both folders as your user), then the dataload notebook. |
 
 ---
 
