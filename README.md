@@ -1,7 +1,7 @@
 # labs-setup
 
 PostgreSQL lab environment for the **Relational Databases** course — a Dockerized
-PostgreSQL 18 instance pre-loaded with seven realistic datasets, paired with a
+PostgreSQL 18 instance pre-loaded with eight realistic datasets, paired with a
 Jupyter/Python toolchain for exploring and querying them.
 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql&logoColor=white)
@@ -17,7 +17,7 @@ Jupyter/Python toolchain for exploring and querying them.
 3. [Quickstart](#quickstart)
 4. [Repository structure](#repository-structure)
 5. [PostgreSQL infrastructure](#postgresql-infrastructure)
-6. [The seven datasets](#the-seven-datasets)
+6. [The eight datasets](#the-eight-datasets)
 7. [Connecting to the database](#connecting-to-the-database)
 8. [Python environment](#python-environment)
 9. [Available extensions](#available-extensions)
@@ -34,7 +34,7 @@ provides:
 
 - A **PostgreSQL 18** server running in Docker, with a curated set of extensions
   (PostGIS, pgvector, pg_cron, and more) pre-installed.
-- **Seven domain-specific datasets** (airline, e-commerce, banking, library,
+- **Eight domain-specific datasets** (airline, e-commerce, banking, library,
   rail freight, ride-sharing, video streaming), each shipped as a SQL dump plus an
   ER diagram.
 - **Two Jupyter notebooks** that automate the entire lifecycle: one that builds and
@@ -60,7 +60,7 @@ flowchart LR
         JL["JupyterLab<br/><i>kernel: python3</i>"]:::host
         INF["postgresql_infra.ipynb<br/>build + start"]:::host
         DL["postgresql_dataload.ipynb<br/>create DBs + import"]:::host
-        SRC["schemas/<br/>7 datasets + ERDs"]:::host
+        SRC["schemas/<br/>8 datasets + ERDs"]:::host
         VOL["mount/postgres/<br/>data · schemas"]:::host
     end
 
@@ -79,6 +79,7 @@ flowchart LR
         C[(banco)]:::db
         D[(biblioteca)]:::db
         G[(ferrocarril)]:::db
+        H[(semantica)]:::db
         E[(uber)]:::db
         F[(youtube)]:::db
     end
@@ -91,7 +92,7 @@ flowchart LR
     VOL -.->|bind| V1
     VOL -.->|bind| V2
     PG --- EXT
-    PG --> A & B & C & D & G & E & F
+    PG --> A & B & C & D & G & H & E & F
     JL -.->|"localhost:5423"| PG
 ```
 
@@ -201,10 +202,10 @@ Then, inside JupyterLab, run the two notebooks **in order**:
 1. **`postgresql/postgresql_infra.ipynb`** — generates the Dockerfile and
    `docker-compose` file, builds the image, and starts the container.
 2. **`postgresql/postgresql_dataload.ipynb`** — copies the schemas into the
-   container mount, creates the seven databases, and imports their data.
+   container mount, creates the eight databases, and imports their data.
 
 After the second notebook finishes, the server is listening on **port `5423`** and
-all seven databases are ready to query (see
+all eight databases are ready to query (see
 [Connecting to the database](#connecting-to-the-database)).
 
 ### Running the notebooks without JupyterLab (papermill)
@@ -253,7 +254,7 @@ labs-setup/
     ├── jupytext.toml              # Pairs each notebook with its .py (py:percent)
     ├── postgresql_infra.ipynb     # Builds & starts the container (generates Docker files)
     ├── postgresql_infra.py        #   same cells as plain text (jupytext pair)
-    ├── postgresql_dataload.ipynb  # Creates the 7 DBs and imports the datasets
+    ├── postgresql_dataload.ipynb  # Creates the 8 DBs and imports the datasets
     ├── postgresql_dataload.py     #   same cells as plain text (jupytext pair)
     ├── init-db.sh                 # Entrypoint: creates DBs listed in $DBS_LIST
     └── schemas/                   # Source datasets (committed)
@@ -262,6 +263,7 @@ labs-setup/
         ├── banco/                 #   banco_db.sql     + ERD Banco.pdf
         ├── biblioteca/            #   biblioteca_db.sql+ ERD Biblioteca.pdf
         ├── ferrocarril/           #   ferrocarril_db.sql + ERD Ferrocarril.pdf
+        ├── semantica/             #   semantica_db.sql + ERD Semantica.pdf
         ├── uber/                  #   uber_db.sql      + ERD Uber.pdf
         └── youtube/               #   youtube_db.sql   + ERD Youtube.pdf
 ```
@@ -303,7 +305,7 @@ inside the container can reach your host machine when needed.
 
 ---
 
-## The seven datasets
+## The eight datasets
 
 Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 (`<name>_db.sql`) plus a PDF entity-relationship diagram (`ERD <Name>.pdf`).
@@ -315,12 +317,13 @@ Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 | `banco` | Banking — customers, cards, transactions | `ERD Banco.pdf` |
 | `biblioteca` | Library — books, loans, inventory | `ERD Biblioteca.pdf` |
 | `ferrocarril` | Rail freight — real Mexican rail network, geofences, trains, shipments, simulated GPS telemetry | `ERD Ferrocarril.pdf` |
+| `semantica` | Semantle-style word game — 8 000 Spanish words with fastText vectors, daily games with a secret word, players, plays and guesses with their similarity and rank | `ERD Semantica.pdf` |
 | `uber` | Ride-sharing — users, drivers, trips | `ERD Uber.pdf` |
 | `youtube` | Video streaming — users, videos, comments | `ERD Youtube.pdf` |
 
 Each database is created with the same name as its dataset (e.g. the `aerolinea`
 schema is loaded into the `aerolinea` database). `ferrocarril` needs the `postgis`
-extension, which the dump creates itself.
+extension and `semantica` the `vector` extension (pgvector); each dump creates its own.
 
 Every dump ends with a short maintenance block (`SET default_statistics_target = 1000;
 VACUUM FULL; VACUUM (FREEZE, ANALYZE);`) so that every load reaches the same physical state and the
@@ -335,6 +338,16 @@ most once per second, and counts published after the `ANALYZE` made autovacuum a
 with a random sample a minute later. The plans, page and buffer counts used in the lectures and labs
 assume this state; if you loaded `ferrocarril` before 2026-10-06, or any other database before
 2026-10-11, run `postgresql_dataload.ipynb` again.
+
+### Data credits for `semantica`
+
+- Word vectors: fastText `cc.es.300` — E. Grave, P. Bojanowski, P. Gupta, A. Joulin, T. Mikolov,
+  *Learning Word Vectors for 157 Languages*, LREC 2018,
+  https://fasttext.cc/docs/en/crawl-vectors.html. «The word vectors are distributed under the Creative
+  Commons Attribution-Share-Alike License 3.0.» `semantica` is a derived database (each vector quantized to
+  integers in [-127, 127]) and is distributed under the same licence (CC BY-SA 3.0).
+- Players, games, plays and guesses are simulated (seed 20261010); every guess's similarity and rank can be
+  recomputed from the vectors with pgvector's `<=>`.
 
 ### Data credits for `ferrocarril`
 
@@ -477,9 +490,9 @@ flowchart TB
     S5 --> S6["Container healthy"]:::done
     S6 --> S7["2 · Run postgresql_dataload.ipynb"]:::step
     S7 --> S8["Copy schemas/ → mount/"]:::step
-    S8 --> S9["DROP + CREATE 7 databases"]:::step
+    S8 --> S9["DROP + CREATE 8 databases"]:::step
     S9 --> S10["psql import *_db.sql"]:::step
-    S10 --> S11[("7 databases ready")]:::done
+    S10 --> S11[("8 databases ready")]:::done
 ```
 
 1. **`postgresql_infra.ipynb`**
@@ -494,7 +507,7 @@ flowchart TB
 2. **`postgresql_dataload.ipynb`**
    - Copies `postgresql/schemas/` into `mount/<POSTGRESQL_NAME>/schemas/` (by default
      `mount/postgres/schemas/`), the folder the infra notebook mounts at `/schemas`.
-   - Drops and recreates the seven databases.
+   - Drops and recreates the eight databases.
    - Imports each SQL dump into its database with `psql`.
 
 ### Rebuilding from scratch

@@ -70,11 +70,12 @@ shutil.copytree(
 # !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} uber
 # !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} youtube
 # !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} ferrocarril
+# !docker exec {POSTGRESQL_NAME} dropdb --if-exists --username {POSTGRESQL_INIT_USER} semantica
 
 # %% [markdown]
 # ### Create databases
 #
-# Recreates the seven course databases (aerolinea, amazon, banco, biblioteca, ferrocarril, uber, youtube) after dropping any previous copies.
+# Recreates the eight course databases (aerolinea, amazon, banco, biblioteca, ferrocarril, semantica, uber, youtube) after dropping any previous copies.
 #
 
 # %%
@@ -85,6 +86,7 @@ shutil.copytree(
 # !docker exec {POSTGRESQL_NAME} createdb --username {POSTGRESQL_INIT_USER} uber
 # !docker exec {POSTGRESQL_NAME} createdb --username {POSTGRESQL_INIT_USER} youtube
 # !docker exec {POSTGRESQL_NAME} createdb --username {POSTGRESQL_INIT_USER} ferrocarril
+# !docker exec {POSTGRESQL_NAME} createdb --username {POSTGRESQL_INIT_USER} semantica
 
 # %% [markdown]
 # ### Import data
@@ -97,3 +99,4 @@ shutil.copytree(
 # !docker exec {POSTGRESQL_NAME} psql --username {POSTGRESQL_INIT_USER} --db uber        -v ON_ERROR_STOP=1 -f {POSTGRESQL_WORKDIR}/schemas/uber/uber_db.sql
 # !docker exec {POSTGRESQL_NAME} psql --username {POSTGRESQL_INIT_USER} --db youtube     -v ON_ERROR_STOP=1 -f {POSTGRESQL_WORKDIR}/schemas/youtube/youtube_db.sql
 # !docker exec {POSTGRESQL_NAME} psql --username {POSTGRESQL_INIT_USER} --db ferrocarril -v ON_ERROR_STOP=1 -f {POSTGRESQL_WORKDIR}/schemas/ferrocarril/ferrocarril_db.sql
+# !docker exec {POSTGRESQL_NAME} psql --username {POSTGRESQL_INIT_USER} --db semantica   -v ON_ERROR_STOP=1 -f {POSTGRESQL_WORKDIR}/schemas/semantica/semantica_db.sql
