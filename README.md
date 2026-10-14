@@ -262,8 +262,8 @@ labs-setup/
         ├── amazon/                #   amazon_db.sql    + ERD Amazon.pdf
         ├── banco/                 #   banco_db.sql     + ERD Banco.pdf
         ├── biblioteca/            #   biblioteca_db.sql+ ERD Biblioteca.pdf
-        ├── ferrocarril/           #   ferrocarril_db.sql + ERD Ferrocarril.pdf
-        ├── semantica/             #   semantica_db.sql + ERD Semantica.pdf
+        ├── ferrocarril/           #   ferrocarril_db.sql + ERD Ferrocarril.pdf + .drawio
+        ├── semantica/             #   semantica_db.sql + ERD Semantica.pdf + .drawio
         ├── uber/                  #   uber_db.sql      + ERD Uber.pdf
         └── youtube/               #   youtube_db.sql   + ERD Youtube.pdf
 ```
@@ -309,6 +309,11 @@ inside the container can reach your host machine when needed.
 
 Each dataset lives under `postgresql/schemas/<name>/` as a PostgreSQL dump
 (`<name>_db.sql`) plus a PDF entity-relationship diagram (`ERD <Name>.pdf`).
+The `ferrocarril` and `semantica` diagrams also come as editable draw.io files
+(`ERD <Name>.drawio`). Both are drawn from the catalog of the published dump
+(tables, columns, types, `PK`/`FK`/`UQ`/`CHK` marks and every foreign key), in
+crow's-foot notation: each line leaves the row of its foreign key and reaches
+the table it references, without crossing another line or passing over a table.
 
 | Dataset | Domain | ER diagram |
 |---|---|---|
